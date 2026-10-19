@@ -1,0 +1,107 @@
+/**
+ * Component Styles for OS Simulator Suite.
+ * Covers Glassmorphic Cards, Buttons, Inputs, Tables, Gantt Chart, Ruler, and Metrics.
+ */
+
+.card {
+  background: var(--bg-card); border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg); padding: 1.25rem;
+  box-shadow: var(--shadow-md); backdrop-filter: var(--backdrop-blur);
+}
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle);
+}
+.card-header h2 { font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; }
+
+/* Controls & Buttons */
+.controls-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.5rem 1rem; font-weight: 600; border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
+  color: #ffffff; box-shadow: 0 2px 8px var(--accent-cyan-glow);
+}
+.btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-secondary { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+.btn-secondary:hover { background: var(--bg-hover); }
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15); color: var(--accent-rose);
+  border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.35rem 0.6rem;
+}
+.btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+/* Inputs & Tables */
+.select-input, .text-input {
+  background: var(--bg-input); color: var(--text-primary);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.45rem 0.75rem;
+}
+.inline-field { display: flex; align-items: center; gap: 0.5rem; }
+.hint-text { font-size: 0.8rem; color: var(--accent-amber); margin-top: 0.25rem; }
+
+.table-responsive { width: 100%; overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.data-table th, .data-table td { padding: 0.65rem 0.75rem; text-align: center; border-bottom: 1px solid var(--border-subtle); }
+.data-table th {
+  background: var(--bg-surface); color: var(--text-secondary);
+  font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.table-input {
+  width: 70px; text-align: center; padding: 0.3rem 0.4rem;
+  background: var(--bg-input); color: var(--text-primary);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+}
+
+/* Error Banner */
+.error-banner {
+  background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5; border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1rem;
+}
+.error-banner ul { padding-left: 1.25rem; margin-top: 0.25rem; }
+
+/* Gantt Chart & Time Ruler */
+.gantt-chart-container { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 0.5rem; }
+.gantt-bar {
+  display: flex; width: 100%; height: 54px; background: var(--bg-input);
+  border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.gantt-block {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  height: 100%; color: #ffffff; font-weight: 700; font-size: 0.85rem;
+  border-right: 1px solid rgba(0, 0, 0, 0.2); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px;
+}
+.gantt-block:hover { opacity: 0.9; }
+.gantt-idle {
+  background-color: var(--idle-block-bg);
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 6px, var(--idle-hatch) 6px, var(--idle-hatch) 12px);
+  color: var(--text-muted);
+}
+.gantt-cs {
+  background-color: var(--accent-amber);
+  background-image: repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(0, 0, 0, 0.2) 6px, rgba(0, 0, 0, 0.2) 12px);
+  color: #000000;
+}
+.gantt-ruler { display: flex; width: 100%; position: relative; }
+.ruler-segment {
+  display: flex; justify-content: space-between; position: relative;
+  font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted);
+}
+
+/* Metrics Grid */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+.metric-card {
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); padding: 1rem; text-align: center;
+}
+.metric-card-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem; }
+.metric-card-value { font-size: 1.4rem; font-weight: 800; color: var(--accent-cyan); font-family: var(--font-mono); }
+
+@media (max-width: 700px) {
+  .controls-bar { flex-direction: column; align-items: stretch; }
+  .controls-bar select, .controls-bar button, .controls-bar .inline-field { width: 100%; }
+}

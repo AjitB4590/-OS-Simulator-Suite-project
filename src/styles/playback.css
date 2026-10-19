@@ -1,0 +1,102 @@
+/**
+ * Styles for Playback Controls, Ready Queue Visualizer,
+ * Export Dropdown, Scenario Presets, and Mobile Touch Targets.
+ */
+
+/* 1. Playback Controls Bar */
+.playback-controls-bar {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  padding: 0.75rem 1rem; margin-bottom: 1rem;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.playback-status-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.85rem; color: var(--text-secondary);
+}
+.step-badge {
+  font-weight: 700; color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.12); padding: 2px 8px; border-radius: 12px;
+}
+.playback-btn-group { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.playback-btn {
+  min-height: 40px; min-width: 40px; padding: 0.4rem 0.8rem;
+  font-weight: 600; font-size: 0.85rem; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all var(--transition-fast);
+}
+.playback-speed-control { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+
+/* 2. Ready Queue Panel */
+.ready-queue-panel {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  background: var(--bg-input); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md); padding: 1rem;
+}
+.cpu-state-header {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;
+}
+.time-badge { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); }
+.event-badge {
+  font-size: 0.8rem; font-family: var(--font-mono); color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.12); padding: 2px 8px; border-radius: 4px;
+}
+.cpu-state-body {
+  display: grid; grid-template-columns: minmax(130px, 180px) 1fr; gap: 1rem; align-items: center;
+}
+.slot-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.35rem; }
+.running-chip {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 0.6rem; border-radius: var(--radius-md); color: #ffffff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-sm); min-height: 54px;
+}
+.running-pid { font-size: 1.25rem; font-weight: 800; }
+.running-sub { font-size: 0.7rem; opacity: 0.9; text-transform: uppercase; }
+.queue-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; min-height: 54px; }
+.queue-chip {
+  display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.65rem;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle); border-left-width: 4px;
+  border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600;
+}
+.queue-idx { font-size: 0.7rem; color: var(--text-muted); }
+.queue-empty-text { font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
+
+/* 3. Export Dropdown & Feedback */
+.dropdown-item {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.6rem 1rem;
+  background: transparent; border: none; text-align: left; color: var(--text-primary);
+  font-size: 0.85rem; cursor: pointer; transition: background var(--transition-fast);
+}
+.dropdown-item:hover, .dropdown-item:focus { background: var(--bg-hover); outline: none; }
+.export-status-toast {
+  position: absolute; right: 0; top: calc(100% + 8px);
+  padding: 0.4rem 0.8rem; border-radius: var(--radius-sm);
+  font-size: 0.8rem; font-weight: 600; white-space: nowrap; z-index: 60;
+}
+.toast-success { background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); color: var(--accent-green); }
+.toast-error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--accent-rose); }
+
+/* 4. Scenario Presets Grid */
+.scenario-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+.scenario-item-card {
+  display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.75rem;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+}
+.scenario-item-info { display: flex; flex-direction: column; gap: 0.15rem; overflow: hidden; }
+.scenario-item-name { font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scenario-item-date { font-size: 0.7rem; color: var(--text-muted); }
+.scenario-item-buttons { display: flex; gap: 0.3rem; align-items: center; }
+.btn-sm { padding: 0.3rem 0.5rem; font-size: 0.75rem; min-height: 32px; border-radius: var(--radius-sm); cursor: pointer; }
+
+/* 5. Mobile & Touch Targets (360px) */
+@media (max-width: 600px) {
+  .cpu-state-body { grid-template-columns: 1fr; }
+  .scenario-action-bar { flex-direction: column; }
+}
+button, select, input[type="text"], input[type="number"], .nav-link {
+  min-height: 40px;
+}
+:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
