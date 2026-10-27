@@ -20,9 +20,37 @@
  *   totalSteps: number
  * }} props
  */
-export function PlaybackControls({ playback, totalSteps }) {
-  const { step, isPlaying, play, pause, next, prev, reset, speed, setSpeed } = playback;
-  const maxStep = Math.max(0, totalSteps - 1);
+export function PlaybackControls({
+  playback,
+  totalSteps = 0,
+  step: propStep,
+  isPlaying: propIsPlaying,
+  onPlay,
+  onPause,
+  onNext,
+  onPrev,
+  onReset,
+  speed: propSpeed,
+  onSpeedChange,
+  play: propPlay,
+  pause: propPause,
+  next: propNext,
+  prev: propPrev,
+  reset: propReset,
+  setSpeed: propSetSpeed,
+}) {
+  const step = playback?.step ?? propStep ?? 0;
+  const isPlaying = playback?.isPlaying ?? propIsPlaying ?? false;
+  const play = playback?.play ?? onPlay ?? propPlay ?? (() => {});
+  const pause = playback?.pause ?? onPause ?? propPause ?? (() => {});
+  const next = playback?.next ?? onNext ?? propNext ?? (() => {});
+  const prev = playback?.prev ?? onPrev ?? propPrev ?? (() => {});
+  const reset = playback?.reset ?? onReset ?? propReset ?? (() => {});
+  const speed = playback?.speed ?? propSpeed ?? 500;
+  const setSpeed = playback?.setSpeed ?? onSpeedChange ?? propSetSpeed ?? (() => {});
+
+  const effectiveTotalSteps = totalSteps || playback?.totalSteps || 0;
+  const maxStep = Math.max(0, effectiveTotalSteps > 0 ? effectiveTotalSteps - 1 : 0);
 
   return (
     <div
@@ -46,6 +74,7 @@ export function PlaybackControls({ playback, totalSteps }) {
           type="button"
           className="btn btn-secondary"
           onClick={reset}
+          disabled={step === 0 && !isPlaying}
           title="Reset to t=0"
           aria-label="Reset simulation to beginning"
           style={{ padding: '0.4rem 0.65rem' }}
@@ -67,7 +96,8 @@ export function PlaybackControls({ playback, totalSteps }) {
           type="button"
           className={`btn ${isPlaying ? 'btn-secondary' : 'btn-primary'}`}
           onClick={isPlaying ? pause : play}
-          title={isPlaying ? 'Pause' : 'Play Simulation'}
+          disabled={effectiveTotalSteps <= 1}
+          title={effectiveTotalSteps <= 1 ? 'Configure processes and click Simulate first' : isPlaying ? 'Pause' : 'Play Simulation'}
           aria-label={isPlaying ? 'Pause simulation animation' : 'Start playing simulation animation'}
           style={{ padding: '0.4rem 0.85rem', fontWeight: 700 }}
         >
@@ -77,7 +107,7 @@ export function PlaybackControls({ playback, totalSteps }) {
           type="button"
           className="btn btn-secondary"
           onClick={next}
-          disabled={step >= maxStep}
+          disabled={step >= maxStep || effectiveTotalSteps <= 1}
           title="Next Step"
           aria-label="Step forward one time unit"
           style={{ padding: '0.4rem 0.65rem' }}

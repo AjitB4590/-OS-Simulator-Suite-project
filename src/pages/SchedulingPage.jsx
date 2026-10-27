@@ -68,12 +68,20 @@ export function SchedulingPage() {
 
   const { result, errors, runSimulation } = useSimulation(processes, algoId, simOptions);
   const activeAlgo = getAlgorithm(algoId);
-  const totalSteps = result ? Math.max(...result.gantt.map((b) => b.end), 0) : 0;
+  const totalTime = result ? Math.max(...result.gantt.map((b) => b.end), 0) : 0;
+  const totalSteps = totalTime > 0 ? totalTime + 1 : 0;
   const playback = usePlayback(totalSteps, { initialSpeedMs: 500 });
 
   const handleSimulate = () => {
     playback.reset();
     runSimulation();
+  };
+
+  const handleToggleStepMode = () => {
+    if (!isStepMode && !result) {
+      runSimulation();
+    }
+    setIsStepMode(!isStepMode);
   };
 
   const handleLoadScenarioData = (sc) => {
@@ -141,7 +149,7 @@ export function SchedulingPage() {
       <Card
         title="3. Execution State & Step Playback"
         action={
-          <button type="button" className="btn-sm btn-secondary" onClick={() => setIsStepMode(!isStepMode)}>
+          <button type="button" className="btn-sm btn-secondary" onClick={handleToggleStepMode}>
             {isStepMode ? 'Switch to Instant Result' : 'Switch to Step Mode'}
           </button>
         }
@@ -149,11 +157,19 @@ export function SchedulingPage() {
         {isStepMode ? (
           <div>
             <PlaybackControls
-              step={playback.step} totalSteps={totalSteps} isPlaying={playback.isPlaying}
-              onPlay={playback.play} onPause={playback.pause} onNext={playback.next} onPrev={playback.prev} onReset={playback.reset}
-              speed={playback.speed} onSpeedChange={playback.setSpeed}
+              playback={playback}
+              totalSteps={totalSteps}
+              step={playback.step}
+              isPlaying={playback.isPlaying}
+              onPlay={playback.play}
+              onPause={playback.pause}
+              onNext={playback.next}
+              onPrev={playback.prev}
+              onReset={playback.reset}
+              speed={playback.speed}
+              onSpeedChange={playback.setSpeed}
             />
-            <ReadyQueueView currentTime={playback.step} totalTime={totalSteps} entry={currentTimelineEntry} />
+            <ReadyQueueView currentTime={playback.step} totalTime={totalTime} entry={currentTimelineEntry} />
           </div>
         ) : (
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>

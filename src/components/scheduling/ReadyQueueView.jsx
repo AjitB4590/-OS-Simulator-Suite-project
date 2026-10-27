@@ -31,7 +31,7 @@ export function ReadyQueueView({ currentTime, entry, totalTime }) {
   const readyQueue = isComplete ? [] : entry?.readyQueue || [];
   const eventText = isComplete
     ? 'All processes completed execution.'
-    : entry?.event || 'Process running in time slice.';
+    : entry?.event || (totalTime === 0 ? 'Simulation not started. Click "Simulate Execution" to generate timeline.' : 'Process running in time slice.');
 
   return (
     <div className="ready-queue-panel" aria-label="CPU State and Ready Queue">
