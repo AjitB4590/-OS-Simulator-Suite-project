@@ -1,7 +1,7 @@
 /**
  * Interactive SVG Canvas for Resource Allocation Graphs (RAG).
- * Renders processes (circles) and resources (rectangles with instance dots),
- * directed request/assignment edges with arrowheads, touch/pointer dragging, and cycle highlighting.
+ * Renders processes (circles), resources (rectangles with instance dots),
+ * directed request/assignment edges, 3-color DFS stepping highlights, and cycle detection.
  */
 
 import { useState } from 'react';
@@ -9,10 +9,14 @@ import { useState } from 'react';
 /**
  * @param {{
  *   nodes: Array<{ id: string, type: 'process'|'resource', label: string, instances?: number, x: number, y: number }>,
- *   edges: Array<{ id: string, from: string, to: string, type: 'request'|'assignment' }>,
+ *   edges: Array<{ id?: string, from: string, to: string, type: 'request'|'assignment' }>,
  *   cycleNodes?: string[],
  *   cycleEdges?: Array<{ from: string, to: string }>,
- *   selectedId?: string|null,
+ *   colorMap?: Record<string, 'white' | 'gray' | 'black'>,
+ *   activeNode?: string | null,
+ *   activeEdge?: { from: string, to: string } | null,
+ *   dfsStack?: string[],
+ *   selectedId?: string | null,
  *   onSelectNode?: (id: string) => void,
  *   onNodeMove?: (id: string, x: number, y: number) => void
  * }} props
@@ -22,6 +26,10 @@ export function RagCanvas({
   edges,
   cycleNodes = [],
   cycleEdges = [],
+  colorMap = {},
+  activeNode = null,
+  activeEdge = null,
+  dfsStack = [],
   selectedId,
   onSelectNode,
   onNodeMove,
@@ -33,11 +41,7 @@ export function RagCanvas({
 
   const handlePointerDown = (e, node) => {
     e.stopPropagation();
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // Ignore
-    }
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* Ignore */ }
     setDraggingId(node.id);
     setOffset({ x: e.clientX - node.x, y: e.clientY - node.y });
     onSelectNode?.(node.id);
@@ -52,17 +56,54 @@ export function RagCanvas({
 
   const handlePointerUp = (e) => {
     if (draggingId) {
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {
-        // Ignore
-      }
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* Ignore */ }
       setDraggingId(null);
     }
   };
 
+  const getNodeFill = (node) => {
+    if (cycleNodes.includes(node.id)) return 'rgba(244, 63, 94, 0.2)';
+    const color = colorMap[node.id];
+    if (color === 'gray') return 'rgba(245, 158, 11, 0.25)';
+    if (color === 'black') return 'rgba(15, 23, 42, 0.65)';
+    return 'var(--bg-surface)';
+  };
+
+  const getNodeStroke = (node) => {
+    if (cycleNodes.includes(node.id)) return 'var(--accent-rose)';
+    if (activeNode === node.id) return 'var(--accent-cyan)';
+    const color = colorMap[node.id];
+    if (color === 'gray') return 'var(--accent-amber)';
+    if (color === 'black') return 'var(--text-muted)';
+    return selectedId === node.id ? 'var(--accent-cyan)' : 'var(--border-subtle)';
+  };
+
   return (
-    <div className="rag-canvas-wrapper" style={{ overflowX: 'auto', touchAction: 'none' }}>
+    <div className="rag-canvas-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      {/* DFS Stack & Color Legend Indicator */}
+      {(dfsStack.length > 0 || Object.keys(colorMap).length > 0) && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.8rem', background: 'var(--bg-surface)', padding: '0.4rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontWeight: 700, color: 'var(--accent-amber)' }}>DFS Stack:</span>
+            {dfsStack.length === 0 ? (
+              <span style={{ color: 'var(--text-muted)' }}>(empty)</span>
+            ) : (
+              dfsStack.map((id, idx) => (
+                <span key={id} className="sequence-chip" style={{ fontSize: '0.75rem', padding: '2px 8px', background: idx === dfsStack.length - 1 ? 'var(--accent-amber)' : undefined, color: idx === dfsStack.length - 1 ? '#000' : undefined }}>
+                  {nodeMap.get(id)?.label || id}
+                </span>
+              ))
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '0.6rem', color: 'var(--text-muted)' }}>
+            <span>⚪ White (Unvisited)</span>
+            <span style={{ color: 'var(--accent-amber)' }}>🟡 Gray (In Stack)</span>
+            <span>⚫ Black (Done)</span>
+            <span style={{ color: 'var(--accent-rose)' }}>🔴 Cycle</span>
+          </div>
+        </div>
+      )}
+
       <svg
         className="rag-svg"
         viewBox="0 0 700 360"
@@ -71,14 +112,12 @@ export function RagCanvas({
         onPointerUp={handlePointerUp}
       >
         <defs>
-          {/* Default Edge Markers */}
           <marker id="arrow-req" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent-amber)" />
           </marker>
           <marker id="arrow-assign" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent-cyan)" />
           </marker>
-          {/* Highlighted Cycle Edge Marker */}
           <marker id="arrow-cycle" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent-rose)" />
           </marker>
@@ -91,8 +130,9 @@ export function RagCanvas({
           if (!from || !to) return null;
 
           const isCycle = cycleEdges.some((ce) => ce.from === edge.from && ce.to === edge.to);
+          const isActive = activeEdge && activeEdge.from === edge.from && activeEdge.to === edge.to;
           const isReq = edge.type === 'request';
-          const stroke = isCycle ? 'var(--accent-rose)' : isReq ? 'var(--accent-amber)' : 'var(--accent-cyan)';
+          const stroke = isCycle ? 'var(--accent-rose)' : isActive ? 'var(--accent-cyan)' : isReq ? 'var(--accent-amber)' : 'var(--accent-cyan)';
           const marker = isCycle ? 'url(#arrow-cycle)' : isReq ? 'url(#arrow-req)' : 'url(#arrow-assign)';
 
           const angle = Math.atan2(to.y - from.y, to.x - from.x);
@@ -108,17 +148,15 @@ export function RagCanvas({
               x2={endX}
               y2={endY}
               stroke={stroke}
-              strokeWidth={isCycle ? 3 : 2}
+              strokeWidth={isCycle ? 3.5 : isActive ? 3 : 2}
               strokeDasharray={isReq ? '5,4' : undefined}
               markerEnd={marker}
-              style={{ transition: 'stroke 150ms ease' }}
             />
           );
         })}
 
         {/* 2. Nodes */}
         {nodes.map((node) => {
-          const isSelected = selectedId === node.id;
           const isCycle = cycleNodes.includes(node.id);
           const isProc = node.type === 'process';
 
@@ -130,15 +168,13 @@ export function RagCanvas({
               style={{ cursor: 'grab' }}
             >
               {isProc ? (
-                /* Process Circle */
                 <circle
                   r={22}
-                  fill="var(--bg-surface)"
-                  stroke={isCycle ? 'var(--accent-rose)' : isSelected ? 'var(--accent-cyan)' : 'var(--border-subtle)'}
-                  strokeWidth={isCycle || isSelected ? 3 : 1.5}
+                  fill={getNodeFill(node)}
+                  stroke={getNodeStroke(node)}
+                  strokeWidth={isCycle || activeNode === node.id ? 3 : 1.5}
                 />
               ) : (
-                /* Resource Rectangle */
                 <g>
                   <rect
                     x={-26}
@@ -146,11 +182,10 @@ export function RagCanvas({
                     width={52}
                     height={40}
                     rx={6}
-                    fill="var(--bg-surface)"
-                    stroke={isCycle ? 'var(--accent-rose)' : isSelected ? 'var(--accent-cyan)' : 'var(--border-subtle)'}
-                    strokeWidth={isCycle || isSelected ? 3 : 1.5}
+                    fill={getNodeFill(node)}
+                    stroke={getNodeStroke(node)}
+                    strokeWidth={isCycle || activeNode === node.id ? 3 : 1.5}
                   />
-                  {/* Instance Indicator Dots inside Resource */}
                   {Array.from({ length: node.instances || 1 }).map((_, i) => {
                     const total = node.instances || 1;
                     const dotX = total === 1 ? 0 : -14 + i * (28 / (total - 1));
@@ -158,8 +193,6 @@ export function RagCanvas({
                   })}
                 </g>
               )}
-
-              {/* Node Label */}
               <text
                 y={isProc ? 5 : -4}
                 textAnchor="middle"

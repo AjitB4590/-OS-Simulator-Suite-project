@@ -13,7 +13,14 @@ import { MatrixInput } from './MatrixInput.jsx';
  *   colHeaders: string[]
  * }} props
  */
-export function NeedMatrix({ need, rowHeaders, colHeaders }) {
+export function NeedMatrix({
+  need,
+  rowHeaders,
+  colHeaders,
+  highlightRowIndex = -1,
+  finishedRows = [],
+  stuckRows = [],
+}) {
   return (
     <div className="need-matrix-panel">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
@@ -28,6 +35,9 @@ export function NeedMatrix({ need, rowHeaders, colHeaders }) {
         colHeaders={colHeaders}
         readOnly={true}
         ariaLabel="Calculated Need Matrix"
+        highlightRowIndex={highlightRowIndex}
+        finishedRows={finishedRows}
+        stuckRows={stuckRows}
       />
     </div>
   );

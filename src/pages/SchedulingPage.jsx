@@ -9,7 +9,7 @@ import { Card } from '../components/common/Card.jsx';
 import { ErrorMessage } from '../components/common/ErrorMessage.jsx';
 import { ProcessTable } from '../components/scheduling/ProcessTable.jsx';
 import { AlgorithmSelector } from '../components/scheduling/AlgorithmSelector.jsx';
-import { PlaybackControls } from '../components/scheduling/PlaybackControls.jsx';
+import { PlaybackControls } from '../components/common/PlaybackControls.jsx';
 import { ReadyQueueView } from '../components/scheduling/ReadyQueueView.jsx';
 import { GanttChart } from '../components/scheduling/GanttChart.jsx';
 import { MetricsCards } from '../components/scheduling/MetricsCards.jsx';

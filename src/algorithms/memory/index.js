@@ -6,6 +6,7 @@
 import { firstFit } from './firstFit.js';
 import { bestFit } from './bestFit.js';
 import { worstFit } from './worstFit.js';
+export { simulateMemoryEvents, MEMORY_EVENT_PRESETS } from './memoryEvents.js';
 
 export const MEMORY_ALGORITHMS = [
   {

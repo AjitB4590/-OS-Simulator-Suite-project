@@ -24,7 +24,17 @@ import { BANKERS_PRESETS } from '../../data/deadlockPresets.js';
  *   onRandomize: () => void
  * }} props
  */
-export function BankersForm({ state, onChangeState, onCheckSafety, onRandomize }) {
+export function BankersForm({
+  state,
+  onChangeState,
+  onCheckSafety,
+  onRandomize,
+  highlightRowIndex = -1,
+  finishedRows = [],
+  stuckRows = [],
+  workVector = null,
+  activeStep = null,
+}) {
   const fileInputRef = useRef(null);
 
   const handleProcessCountChange = (count) => {
@@ -112,10 +122,10 @@ export function BankersForm({ state, onChangeState, onCheckSafety, onRandomize }
         </div>
       </div>
 
-      {/* 2. Available Vector */}
-      <div className="available-vector-bar" style={{ margin: '0.75rem 0 1.25rem' }}>
-        <span style={{ fontWeight: 600, fontSize: '0.85rem', marginRight: '0.75rem' }}>Available Vector:</span>
-        <div style={{ display: 'inline-flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      {/* 2. Available & Live Work Vectors */}
+      <div className="available-vector-bar" style={{ margin: '0.75rem 0 1.25rem', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Available:</span>
           {state.resourceNames.map((rName, j) => (
             <div key={rName} className="inline-field" style={{ gap: '0.25rem' }}>
               <label htmlFor={`avail-${j}`} style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{rName}:</label>
@@ -133,6 +143,18 @@ export function BankersForm({ state, onChangeState, onCheckSafety, onRandomize }
             </div>
           ))}
         </div>
+
+        {workVector && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-card-solid)', padding: '0.3rem 0.6rem', borderRadius: '4px', border: '1px solid var(--accent-cyan)' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--accent-cyan)' }}>Live Work Vector:</span>
+            <code style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>[{workVector.join(', ')}]</code>
+            {activeStep?.canRun !== undefined && activeStep?.canRun !== null && (
+              <span className={`status-pill ${activeStep.canRun ? 'pill-safe' : 'pill-unsafe'}`} style={{ fontSize: '0.7rem' }}>
+                Need ≤ Work: {activeStep.canRun ? '✓ YES' : '✗ NO'}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 3. Matrices Grid */}
@@ -143,6 +165,9 @@ export function BankersForm({ state, onChangeState, onCheckSafety, onRandomize }
           rowHeaders={state.processNames}
           colHeaders={state.resourceNames}
           onChange={(alloc) => onChangeState({ ...state, allocation: alloc })}
+          highlightRowIndex={highlightRowIndex}
+          finishedRows={finishedRows}
+          stuckRows={stuckRows}
         />
         <MatrixInput
           title="Max Claim Matrix"
@@ -150,11 +175,17 @@ export function BankersForm({ state, onChangeState, onCheckSafety, onRandomize }
           rowHeaders={state.processNames}
           colHeaders={state.resourceNames}
           onChange={(max) => onChangeState({ ...state, max })}
+          highlightRowIndex={highlightRowIndex}
+          finishedRows={finishedRows}
+          stuckRows={stuckRows}
         />
         <NeedMatrix
           need={state.need}
           rowHeaders={state.processNames}
           colHeaders={state.resourceNames}
+          highlightRowIndex={highlightRowIndex}
+          finishedRows={finishedRows}
+          stuckRows={stuckRows}
         />
       </div>
     </div>

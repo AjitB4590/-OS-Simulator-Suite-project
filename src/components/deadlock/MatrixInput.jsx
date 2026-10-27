@@ -22,6 +22,9 @@ export function MatrixInput({
   readOnly = false,
   title,
   ariaLabel,
+  highlightRowIndex = -1,
+  finishedRows = [],
+  stuckRows = [],
 }) {
   const handleCellChange = (rIdx, cIdx, val) => {
     if (readOnly || !onChange) return;
@@ -46,27 +49,38 @@ export function MatrixInput({
             </tr>
           </thead>
           <tbody>
-            {matrix.map((row, rIdx) => (
-              <tr key={rowHeaders[rIdx] || rIdx}>
-                <td className="row-header-cell">{rowHeaders[rIdx] || `P${rIdx}`}</td>
-                {row.map((cell, cIdx) => (
-                  <td key={cIdx} style={{ padding: '0.35rem' }}>
-                    {readOnly ? (
-                      <span className="matrix-cell-readonly">{cell}</span>
-                    ) : (
-                      <input
-                        type="number"
-                        className="table-input"
-                        min="0"
-                        value={cell}
-                        onChange={(e) => handleCellChange(rIdx, cIdx, e.target.value)}
-                        aria-label={`${rowHeaders[rIdx]} ${colHeaders[cIdx]}`}
-                      />
-                    )}
+            {matrix.map((row, rIdx) => {
+              const isHighlighted = rIdx === highlightRowIndex;
+              const isFinished = finishedRows?.[rIdx] || (Array.isArray(finishedRows) && finishedRows.includes(rIdx));
+              const isStuck = Array.isArray(stuckRows) && stuckRows.includes(rIdx);
+              const rowClass = isHighlighted ? 'matrix-row-highlight' : isStuck ? 'matrix-row-stuck' : isFinished ? 'matrix-row-finished' : undefined;
+
+              return (
+                <tr key={rowHeaders[rIdx] || rIdx} className={rowClass}>
+                  <td className="row-header-cell">
+                    {rowHeaders[rIdx] || `P${rIdx}`}
+                    {isFinished && <span style={{ marginLeft: '4px', color: 'var(--accent-green)', fontWeight: 'bold' }}>✓</span>}
+                    {isStuck && <span style={{ marginLeft: '4px', color: 'var(--accent-rose)', fontWeight: 'bold' }}>✗</span>}
                   </td>
-                ))}
-              </tr>
-            ))}
+                  {row.map((cell, cIdx) => (
+                    <td key={cIdx} style={{ padding: '0.35rem' }}>
+                      {readOnly ? (
+                        <span className="matrix-cell-readonly">{cell}</span>
+                      ) : (
+                        <input
+                          type="number"
+                          className="table-input"
+                          min="0"
+                          value={cell}
+                          onChange={(e) => handleCellChange(rIdx, cIdx, e.target.value)}
+                          aria-label={`${rowHeaders[rIdx]} ${colHeaders[cIdx]}`}
+                        />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

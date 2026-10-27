@@ -72,37 +72,51 @@
   display: block;
 }
 
-/* Nav Tabs */
-.nav-tabs {
-  display: flex;
+/* Nav Tabs & Sub-Nav Tabs */
+.nav-tabs,
+.sub-nav-tabs {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   background: var(--bg-surface);
-  padding: 0.25rem;
+  padding: 0.3rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
 }
 
-.nav-link {
+.nav-link,
+.tab-btn {
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 500;
-  padding: 0.4rem 0.85rem;
+  padding: 0.45rem 0.9rem;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   transition: all var(--transition-fast);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: inherit;
+  line-height: 1.4;
 }
 
-.nav-link:hover {
+.nav-link:hover,
+.tab-btn:hover {
   color: var(--text-primary);
   background: var(--bg-hover);
 }
 
-.nav-link.active {
+.nav-link.active,
+.tab-btn.active {
   color: var(--text-primary);
   background: var(--bg-card-solid);
   box-shadow: var(--shadow-sm);
   font-weight: 600;
+  border: 1px solid var(--border-color);
 }
 
 /* Scheduling Page Layout */

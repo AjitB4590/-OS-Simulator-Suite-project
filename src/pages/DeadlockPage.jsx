@@ -1,8 +1,8 @@
 /**
  * Deadlock Simulation Module Page.
  * Offers two comprehensive deadlock sub-modules:
- * 1. Banker's Algorithm (Safety State Check, Need Matrix, Request Evaluation)
- * 2. Resource Allocation Graph (RAG Canvas, DFS Cycle Detection, Holt's Theorem Analysis)
+ * 1. Banker's Algorithm (Safety State Check with Playback, Need Matrix, Request Evaluation)
+ * 2. Resource Allocation Graph (RAG Canvas, 3-Color DFS Cycle Stepping, Event Simulator, Holt's Analysis)
  */
 
 import { useState, useEffect } from 'react';
@@ -15,10 +15,13 @@ import { RequestPanel } from '../components/deadlock/RequestPanel.jsx';
 import { RagCanvas } from '../components/deadlock/RagCanvas.jsx';
 import { RagEditor } from '../components/deadlock/RagEditor.jsx';
 import { RagResult } from '../components/deadlock/RagResult.jsx';
+import { RagDfsSimulator } from '../components/deadlock/RagDfsSimulator.jsx';
+import { RagEventSimulator } from '../components/deadlock/RagEventSimulator.jsx';
 import { computeNeed, isSafe, validateState } from '../algorithms/deadlock/bankers.js';
 import { analyzeDeadlock, validateGraph } from '../algorithms/deadlock/rag.js';
 import { BANKERS_PRESETS, RAG_PRESETS } from '../data/deadlockPresets.js';
 import { useLocalStorage } from '../hooks/useLocalStorage.js';
+import { usePlayback } from '../hooks/usePlayback.js';
 
 export function DeadlockPage() {
   const [activeTab, setActiveTab] = useState('bankers');
@@ -30,6 +33,7 @@ export function DeadlockPage() {
     need: computeNeed(savedBankers.max, savedBankers.allocation),
   }));
   const [safetyResult, setSafetyResult] = useState(() => isSafe(bState.allocation, bState.max, bState.available, bState.processNames));
+  const safetyPlayback = usePlayback(safetyResult.steps.length, { initialSpeedMs: 700 });
 
   useEffect(() => {
     setSavedBankers({
@@ -45,12 +49,14 @@ export function DeadlockPage() {
     const need = computeNeed(next.max, next.allocation);
     const updated = { ...next, need };
     setBState(updated);
-    setSafetyResult(isSafe(updated.allocation, updated.max, updated.available, updated.processNames));
+    const res = isSafe(updated.allocation, updated.max, updated.available, updated.processNames);
+    setSafetyResult(res);
+    safetyPlayback.reset();
   };
 
   const handleRandomizeBankers = () => {
-    const n = Math.floor(Math.random() * 3) + 3; // 3 to 5
-    const m = Math.floor(Math.random() * 2) + 2; // 2 to 3
+    const n = Math.floor(Math.random() * 3) + 3;
+    const m = Math.floor(Math.random() * 2) + 2;
     const processNames = Array.from({ length: n }, (_, i) => `P${i}`);
     const resourceNames = ['A', 'B', 'C'].slice(0, m);
     const available = Array.from({ length: m }, () => Math.floor(Math.random() * 4) + 2);
@@ -60,6 +66,15 @@ export function DeadlockPage() {
   };
 
   const bankersErrors = validateState(bState.allocation, bState.max, bState.available);
+  const activeSafetyStep = safetyResult.steps[safetyPlayback.step] || safetyResult.steps[0];
+  const highlightRowIndex = activeSafetyStep?.highlight?.processIndex ?? -1;
+  const finishedRows = activeSafetyStep?.snapshot?.finish
+    ? activeSafetyStep.snapshot.finish.map((f, i) => (f ? i : -1)).filter((i) => i !== -1)
+    : [];
+  const stuckRows = activeSafetyStep?.highlight?.stuckProcesses
+    ? activeSafetyStep.highlight.stuckProcesses.map((p) => bState.processNames.indexOf(p)).filter((i) => i !== -1)
+    : [];
+  const workVector = activeSafetyStep?.snapshot?.work || null;
 
   // 2. RAG State with localStorage Persistence
   const [savedRag, setSavedRag] = useLocalStorage('ossim.rag.last_state.v1', RAG_PRESETS[0], { debounceMs: 500 });
@@ -72,6 +87,13 @@ export function DeadlockPage() {
 
   const ragAnalysis = analyzeDeadlock(ragGraph);
   const ragErrors = validateGraph(ragGraph);
+
+  const handleNodeMove = (id, x, y) => {
+    setRagGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) => (n.id === id ? { ...n, x, y } : n)),
+    }));
+  };
 
   return (
     <div className="scheduling-layout deadlock-page-layout">
@@ -123,16 +145,31 @@ export function DeadlockPage() {
             <BankersForm
               state={bState}
               onChangeState={handleUpdateBankersState}
-              onCheckSafety={() => setSafetyResult(isSafe(bState.allocation, bState.max, bState.available, bState.processNames))}
+              onCheckSafety={() => {
+                const res = isSafe(bState.allocation, bState.max, bState.available, bState.processNames);
+                setSafetyResult(res);
+                safetyPlayback.reset();
+              }}
               onRandomize={handleRandomizeBankers}
+              highlightRowIndex={highlightRowIndex}
+              finishedRows={finishedRows}
+              stuckRows={stuckRows}
+              workVector={workVector}
+              activeStep={activeSafetyStep}
             />
           </Card>
 
           <Card title="2. System Safety Evaluation & Execution Sequence">
-            <SafeSequenceView safe={safetyResult.safe} sequence={safetyResult.sequence} />
+            <SafeSequenceView
+              safe={safetyResult.safe}
+              sequence={safetyResult.sequence}
+              currentSequence={activeSafetyStep?.snapshot?.safeSequence}
+              stuckProcesses={activeSafetyStep?.highlight?.stuckProcesses}
+              explanation={activeSafetyStep?.explanation}
+            />
             <div style={{ marginTop: '1.25rem' }}>
-              <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Safety Algorithm Step-by-Step Trace</h4>
-              <SafetyTrace steps={safetyResult.steps} />
+              <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>Safety Algorithm Step-by-Step Playback</h4>
+              <SafetyTrace steps={safetyResult.steps} playback={safetyPlayback} />
             </div>
           </Card>
 
@@ -168,17 +205,25 @@ export function DeadlockPage() {
                 cycleEdges={ragAnalysis.cycleEdges}
                 selectedId={selectedNodeId}
                 onSelectNode={setSelectedNodeId}
-                onNodeMove={(id, x, y) => {
-                  setRagGraph((prev) => ({
-                    ...prev,
-                    nodes: prev.nodes.map((n) => (n.id === id ? { ...n, x, y } : n)),
-                  }));
-                }}
+                onNodeMove={handleNodeMove}
               />
             </div>
           </Card>
 
-          <Card title="2. Deadlock Analysis & Cycle Detection">
+          <Card title="2. 3-Color DFS Cycle Detection Simulation" subtitle="Step-by-step playback: white/gray/black node coloring, DFS stack chips, and cycle discovery.">
+            <RagDfsSimulator
+              graph={ragGraph}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={setSelectedNodeId}
+              onNodeMove={handleNodeMove}
+            />
+          </Card>
+
+          <Card title="3. Dynamic Event Simulator" subtitle="Build or run chronological event scripts live with instant deadlock analysis.">
+            <RagEventSimulator />
+          </Card>
+
+          <Card title="4. Holt's Theorem Deadlock Summary">
             <RagResult analysis={ragAnalysis} />
           </Card>
         </>

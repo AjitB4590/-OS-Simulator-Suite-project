@@ -92,3 +92,17 @@
   padding: 0.6rem 0.85rem; border-radius: var(--radius-sm);
 }
 .cycle-path-text { color: var(--accent-rose); font-size: 0.95rem; }
+
+/* 6. Matrix Stepping Highlights */
+.matrix-row-highlight {
+  background: rgba(6, 182, 212, 0.16) !important;
+  outline: 2px solid var(--accent-cyan);
+}
+.matrix-row-finished {
+  background: rgba(34, 197, 94, 0.08) !important;
+}
+.matrix-row-stuck {
+  background: rgba(239, 68, 68, 0.12) !important;
+  outline: 1px solid var(--accent-rose);
+}
+

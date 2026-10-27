@@ -1,7 +1,7 @@
 /**
  * Proportional Memory Partition Visualizer Bar.
  * Renders contiguous blocks scaled by capacity, nested process partitions colored by PID,
- * hatched free space holes, hover tooltips, and candidate highlighting during step playback.
+ * free space holes, and candidate/decision highlighting directly from algorithm snapshots.
  */
 
 import { getProcessColor } from '../../utils/colors.js';
@@ -10,7 +10,17 @@ import { getProcessColor } from '../../utils/colors.js';
  * @param {{
  *   blocks: Array<{ index: number, originalSize: number, remaining: number, allocatedTo: Array<{ pid: string, size: number }> }>,
  *   currentStep?: number,
- *   steps?: Array<{ pid: string, size: number, chosenBlock: number|null, candidates: Array<{ index: number, remaining: number, fits: boolean }>, note: string }>
+ *   steps?: Array<{
+ *     pid?: string,
+ *     size?: number,
+ *     chosenBlock?: number|null,
+ *     checkingBlock?: number|null,
+ *     candidates?: Array<{ index: number, remaining: number, fits: boolean }>,
+ *     note?: string,
+ *     explanation?: string,
+ *     highlight?: any,
+ *     snapshot?: { blocks: any[], allocations: any[], stats: any }
+ *   }>
  * }} props
  */
 export function MemoryBar({ blocks, currentStep, steps }) {
@@ -19,24 +29,9 @@ export function MemoryBar({ blocks, currentStep, steps }) {
   const isStepMode = typeof currentStep === 'number' && steps && steps.length > 0;
   const activeStep = isStepMode ? steps[currentStep] : null;
 
-  // Compute progressive block state up to currentStep
-  let renderedBlocks = blocks;
-  if (isStepMode) {
-    renderedBlocks = blocks.map((b) => ({
-      ...b,
-      remaining: b.originalSize,
-      allocatedTo: [],
-    }));
-    for (let s = 0; s <= currentStep && s < steps.length; s++) {
-      const step = steps[s];
-      if (step.chosenBlock !== null && renderedBlocks[step.chosenBlock]) {
-        renderedBlocks[step.chosenBlock].allocatedTo.push({ pid: step.pid, size: step.size });
-        renderedBlocks[step.chosenBlock].remaining -= step.size;
-      }
-    }
-  }
+  // Use pure algorithm snapshot directly without UI recomputation
+  const renderedBlocks = activeStep?.snapshot?.blocks || blocks;
 
-  // Extract unique active processes for legend
   const uniquePids = Array.from(
     new Set(renderedBlocks.flatMap((b) => b.allocatedTo.map((p) => p.pid)))
   );
@@ -46,8 +41,10 @@ export function MemoryBar({ blocks, currentStep, steps }) {
       {/* Active Step Annotation */}
       {activeStep && (
         <div className="memory-step-callout">
-          <span className="step-badge">Target: {activeStep.pid} ({activeStep.size} KB)</span>
-          <span className="step-note-text">{activeStep.note}</span>
+          <span className="step-badge">
+            {activeStep.pid ? `Process: ${activeStep.pid} (${activeStep.size} KB)` : activeStep.title}
+          </span>
+          <span className="step-note-text">{activeStep.explanation || activeStep.note}</span>
         </div>
       )}
 
@@ -55,25 +52,58 @@ export function MemoryBar({ blocks, currentStep, steps }) {
       <div className="memory-bar-scroll-wrapper" style={{ overflowX: 'auto', paddingBottom: '0.5rem' }}>
         <div className="memory-blocks-track" style={{ display: 'flex', gap: '0.6rem', minWidth: '600px' }}>
           {renderedBlocks.map((b) => {
-            const isCandidate = activeStep?.candidates?.find((c) => c.index === b.index);
-            const isChosen = activeStep?.chosenBlock === b.index;
-            const borderStyle = isChosen
-              ? '2px solid var(--accent-green)'
-              : isCandidate?.fits
-              ? '2px dashed var(--accent-cyan)'
-              : isCandidate && !isCandidate.fits
-              ? '2px dashed var(--accent-rose)'
-              : '1px solid var(--border-subtle)';
+            const isChosen = activeStep?.chosenBlock === b.index || activeStep?.highlight?.chosenBlock === b.index;
+            const isChecking = activeStep?.checkingBlock === b.index || activeStep?.highlight?.checkingBlock === b.index;
+            const candidate = activeStep?.candidates?.find((c) => c.index === b.index);
+
+            let borderStyle = '1px solid var(--border-subtle)';
+            if (isChosen) {
+              borderStyle = '2px solid var(--accent-green)';
+            } else if (isChecking) {
+              borderStyle = activeStep?.highlight?.fits || candidate?.fits
+                ? '2px dashed var(--accent-cyan)'
+                : '2px dashed var(--accent-rose)';
+            } else if (candidate?.fits) {
+              borderStyle = '1px dashed rgba(6, 182, 212, 0.4)';
+            }
 
             return (
               <div
                 key={b.index}
                 className="memory-block-slot"
                 style={{ flexGrow: b.originalSize, flexBasis: 0, border: borderStyle, minWidth: '90px' }}
-                title={`Block #${b.index}: Total ${b.originalSize} KB | Used: ${b.originalSize - b.remaining} KB | Free: ${b.remaining} KB`}
+                title={`Block B${b.index}: Total ${b.originalSize} KB | Used: ${b.originalSize - b.remaining} KB | Free: ${b.remaining} KB`}
               >
                 <div className="block-slot-header">
                   <span>B{b.index}</span>
+                  {isChosen && (
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        padding: '1px 5px',
+                        borderRadius: '3px',
+                        fontWeight: 700,
+                        backgroundColor: 'rgba(34, 197, 94, 0.25)',
+                        color: 'var(--accent-green)',
+                      }}
+                    >
+                      ★ Selected
+                    </span>
+                  )}
+                  {!isChosen && isChecking && (
+                    <span
+                      style={{
+                        fontSize: '0.65rem',
+                        padding: '1px 5px',
+                        borderRadius: '3px',
+                        fontWeight: 700,
+                        backgroundColor: activeStep?.highlight?.fits || candidate?.fits ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                        color: activeStep?.highlight?.fits || candidate?.fits ? 'var(--accent-green)' : 'var(--accent-rose)',
+                      }}
+                    >
+                      {activeStep?.highlight?.fits || candidate?.fits ? '✓ Fits' : '✗ Too small'}
+                    </span>
+                  )}
                   <span>{b.originalSize}K</span>
                 </div>
 

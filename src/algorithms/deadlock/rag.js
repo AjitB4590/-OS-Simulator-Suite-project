@@ -134,13 +134,14 @@ export function detectCycle(graph) {
 export function analyzeDeadlock(graph) {
   const validationErrors = validateGraph(graph);
   if (validationErrors.length > 0) {
-    return { status: 'error', message: validationErrors.join('; '), cycleNodes: [], cycleEdges: [] };
+    return { status: 'error', hasCycle: false, message: validationErrors.join('; '), cycleNodes: [], cycleEdges: [] };
   }
 
   const { hasCycle, cycleNodes, cycleEdges } = detectCycle(graph);
   if (!hasCycle) {
     return {
       status: 'no-cycle',
+      hasCycle: false,
       message: 'No circular wait (cycle) detected. The system is provably free of deadlock.',
       cycleNodes: [],
       cycleEdges: [],
@@ -157,6 +158,7 @@ export function analyzeDeadlock(graph) {
   if (allSingleInstance) {
     return {
       status: 'deadlock',
+      hasCycle: true,
       message: 'Deadlock confirmed: A directed cycle was found where all involved resources are single-instance.',
       cycleNodes,
       cycleEdges,
@@ -166,9 +168,14 @@ export function analyzeDeadlock(graph) {
 
   return {
     status: 'possible-deadlock',
+    hasCycle: true,
     message: 'Possible deadlock: Cycle detected involving multi-instance resource(s). Cycle is a necessary but not sufficient condition.',
     cycleNodes,
     cycleEdges,
     cyclePath,
   };
 }
+
+export { simulateRagDfs } from './ragDfs.js';
+export { simulateRagEvents, RAG_EVENT_PRESETS } from './ragEvents.js';
+
